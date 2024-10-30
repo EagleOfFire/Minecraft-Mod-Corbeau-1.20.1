@@ -16,6 +16,7 @@ import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.Nullable;
 import ros.eagleoffire.roscorbeau.entity.ModEntities;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -65,12 +66,12 @@ public class CorbeauEntity extends Animal implements GeoEntity {
     }
 
     private <T extends GeoAnimatable> PlayState predicate(AnimationState<T> tAnimationState) {
-        if(tAnimationState.isMoving()){
-            tAnimationState.getController().setAnimation(RawAnimation.begin().then("animation.corbeau.planer", Animation.LoopType.LOOP));
+        if(tAnimationState.isMoving()) {
+            tAnimationState.getController().setAnimation(RawAnimation.begin().then("animation.corbeau.marcher", Animation.LoopType.LOOP));
             return PlayState.CONTINUE;
         }
 
-        tAnimationState.getController().setAnimation(RawAnimation.begin().then("animation.corbeau.planer", Animation.LoopType.LOOP));
+        tAnimationState.getController().setAnimation(RawAnimation.begin().then("animation.corbeau.idle", Animation.LoopType.LOOP));
         return PlayState.CONTINUE;
     }
 

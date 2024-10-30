@@ -14,11 +14,11 @@ public class ModEntities {
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, ROSCorbeau.MODID);
 
-    public static final RegistryObject<EntityType<CorbeauEntity>> CORBEAU =
-            ENTITY_TYPES.register("tiger",
-                    () -> EntityType.Builder.of(CorbeauEntity::new, MobCategory.CREATURE)
-                            .sized(1.5f, 1.75f)
-                            .build(new ResourceLocation(ROSCorbeau.MODID, "corbeau").toString()));
+    public static final RegistryObject<EntityType<CorbeauEntity>> CORBEAU = ENTITY_TYPES.register("corbeau",
+            () -> EntityType.Builder.of(CorbeauEntity::new, MobCategory.CREATURE)
+                    .sized(0.5F, 0.5F) // Width and height of the hitbox
+                    .build(new ResourceLocation(ROSCorbeau.MODID, "corbeau").toString()));
+
 
     public static void register(IEventBus eventBus){
         ENTITY_TYPES.register(eventBus);
