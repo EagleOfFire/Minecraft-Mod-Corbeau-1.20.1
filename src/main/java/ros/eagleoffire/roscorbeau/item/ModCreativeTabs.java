@@ -19,6 +19,7 @@ public class ModCreativeTabs {
                     .title(Component.translatable("creativetab.ros_corbeau_tab"))
                     .displayItems((pParameters, pOutput) -> {
                         pOutput.accept(ModItems.CORBEAU_SPAWN_EGG.get());
+                        pOutput.accept(ModItems.PARCHEMIN.get());
                     })
                     .build());
 
