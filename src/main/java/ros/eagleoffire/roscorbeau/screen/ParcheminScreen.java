@@ -124,28 +124,31 @@ public class ParcheminScreen extends Screen {
 
     protected void init() {
         this.clearDisplayCache();
+
         this.signButton = (Button) this.addRenderableWidget(Button.builder(Component.translatable("book.signButton"), (sign) -> {
             this.isSigning = true;
             this.updateButtonVisibility();
         }).bounds(this.width / 2 - 100, 225, 98, 20).build());
+
         this.doneButton = (Button) this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, (button) -> {
             this.minecraft.setScreen((Screen) null);
             this.saveChanges(false);
         }).bounds(this.width / 2 + 2, 225, 98, 20).build());
+
         this.finalizeButton = (Button) this.addRenderableWidget(Button.builder(Component.translatable("book.finalizeButton"), (finish) -> {
             if (this.isSigning) {
                 this.saveChanges(true);
                 this.minecraft.setScreen((Screen) null);
             }
-
         }).bounds(this.width / 2 - 100, 225, 98, 20).build());
+
         this.cancelButton = (Button) this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, (cancel) -> {
             if (this.isSigning) {
                 this.isSigning = false;
             }
-
             this.updateButtonVisibility();
         }).bounds(this.width / 2 + 2, 225, 98, 20).build());
+
         this.updateButtonVisibility();
     }
 
@@ -308,25 +311,27 @@ public class ParcheminScreen extends Screen {
 
     }
 
-    private boolean titleKeyPressed(int p_98164_, int p_98165_, int p_98166_) {
-        switch (p_98164_) {
-            case 257:
-            case 335:
+    private boolean titleKeyPressed(int keyCode, int scanCode, int modifiers) {
+        switch (keyCode) {
+            case 257: // Enter key
+            case 335: // Numpad Enter key
                 if (!this.title.isEmpty()) {
                     this.saveChanges(true);
                     this.minecraft.setScreen((Screen) null);
                 }
-
                 return true;
-            case 259:
+
+            case 259: // Backspace key
                 this.titleEdit.removeCharsFromCursor(-1);
                 this.updateButtonVisibility();
                 this.isModified = true;
                 return true;
+
             default:
                 return false;
         }
     }
+
 
     private String getCurrentPageText() {
         return this.currentPage >= 0 && this.currentPage < this.pages.size() ? (String) this.pages.get(this.currentPage) : "";
@@ -366,16 +371,16 @@ public class ParcheminScreen extends Screen {
             );
 
             int titleLabelWidth = this.font.width(EDIT_TITLE_LABEL);
-            graphics.drawString(this.font, EDIT_TITLE_LABEL, screenCenterX + 36 + (114 - titleLabelWidth) / 2, 34, 0, false);
+            graphics.drawString(this.font, EDIT_TITLE_LABEL, (int) (screenCenterX * (1.8)), 50, 0, false);
 
             int titleTextWidth = this.font.width(titleText);
-            graphics.drawString(this.font, titleText, screenCenterX + 36 + (114 - titleTextWidth) / 2, 50, 0, false);
+            graphics.drawString(this.font, titleText, (int) (screenCenterX * (2.1)), 65, 0, false);
 
             int ownerTextWidth = this.font.width(this.ownerText);
-            graphics.drawString(this.font, this.ownerText, screenCenterX + 36 + (114 - ownerTextWidth) / 2, 60, 0, false);
+            graphics.drawString(this.font, this.ownerText, (int) (screenCenterX * (2)), 82, 0, false);
 
             // Draw the finalization warning message
-            graphics.drawWordWrap(this.font, FINALIZE_WARNING_LABEL, screenCenterX + 36, 82, 114, 0);
+            graphics.drawWordWrap(this.font, FINALIZE_WARNING_LABEL, (int) (screenCenterX * (1.5)), 114, 140, 0);
         } else {
             // Display current page message
             int pageMsgWidth = this.font.width(this.pageMsg);
