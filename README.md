@@ -2,12 +2,6 @@
 
 Corbeau is a Minecraft mod designed for version 1.20.1 that introduces new features and enhancements to the game.
 
-## Features
-
-- **Feature 1**: Description of the first feature.
-- **Feature 2**: Description of the second feature.
-- **Feature 3**: Description of the third feature.
-
 ## Installation
 
 To install the Corbeau mod:
