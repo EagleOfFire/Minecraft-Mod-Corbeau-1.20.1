@@ -40,6 +40,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import ros.eagleoffire.roscorbeau.ROSCorbeau;
 import net.minecraft.client.gui.components.EditBox;
+import ros.eagleoffire.roscorbeau.item.ModItems;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -168,7 +169,7 @@ public class ParcheminScreen extends Screen {
                         }
                         tag.put("pages", pagesTag);
 
-                        ItemStack signedBook = new ItemStack(Items.WRITTEN_BOOK);
+                        ItemStack signedBook = new ItemStack(ModItems.PARCHEMIN_SCELLE.get());
                         signedBook.setTag(tag);
 
                         player.setItemInHand(player.getUsedItemHand(), signedBook);
@@ -188,12 +189,6 @@ public class ParcheminScreen extends Screen {
         this.updateButtonVisibility();
 
         this.authorName = this.minecraft.player != null ? this.minecraft.player.getName().getString() : "";
-
-        this.authorField = new EditBox(this.font, this.width / 2 - 100, 200, 200, 20, Component.literal("Author"));
-        this.authorField.setValue(this.authorName);
-        this.authorField.setResponder((value) -> this.authorName = value);
-
-        this.addRenderableWidget(this.authorField);
     }
 
     private void updateButtonVisibility() {
