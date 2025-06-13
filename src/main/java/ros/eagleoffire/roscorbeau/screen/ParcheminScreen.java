@@ -7,6 +7,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
 import net.minecraft.Util;
 import net.minecraft.client.GameNarrator;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,6 +16,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.font.TextFieldHelper;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.nbt.CompoundTag;
@@ -29,12 +31,15 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.WritableBookItem;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import ros.eagleoffire.roscorbeau.ROSCorbeau;
+import net.minecraft.client.gui.components.EditBox;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -81,6 +86,8 @@ public class ParcheminScreen extends Screen {
     private DisplayCache displayCache;
     private Component pageMsg;
     private final Component ownerText;
+    private String authorName;
+    private EditBox authorField;
 
     public ParcheminScreen(Player player, ItemStack stack, InteractionHand hand) {
         super(GameNarrator.NO_TITLE);
@@ -130,15 +137,44 @@ public class ParcheminScreen extends Screen {
             this.updateButtonVisibility();
         }).bounds(this.width / 2 - 100, 225, 98, 20).build());
 
-        this.doneButton = (Button) this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, (button) -> {
-            this.minecraft.setScreen((Screen) null);
-            this.saveChanges(false);
-        }).bounds(this.width / 2 + 2, 225, 98, 20).build());
+        this.doneButton = (Button) this.addRenderableWidget(Button.builder(
+                CommonComponents.GUI_DONE, (button) -> {
+                    if (this.isSigning) {
+                        // Save and finalize the book with signature
+                        System.out.println("Finalizing book with title: " + this.title);
+                        this.saveChanges(true);
+                    } else {
+                        System.out.println("Finalizing book with title: " + this.title);
+                        this.saveChanges(false); // Regular save without signing
+                    }
+                    this.minecraft.setScreen(null);
+                }).bounds(this.width / 2 + 2, 225, 98, 20).build());
 
         this.finalizeButton = (Button) this.addRenderableWidget(Button.builder(Component.translatable("book.finalizeButton"), (finish) -> {
             if (this.isSigning) {
-                this.saveChanges(true);
-                this.minecraft.setScreen((Screen) null);
+                this.saveChanges(true); // If this saves title/pages, keep it
+                LocalPlayer player = Minecraft.getInstance().player;
+                if (player != null) {
+                    ItemStack heldItem = player.getMainHandItem();
+                    if (heldItem.getItem() instanceof WritableBookItem) {
+                        CompoundTag tag = heldItem.getOrCreateTag();
+                        tag.putString("author", this.authorName);
+                        tag.putString("title", this.title); // Assuming you have a `title` field
+                        tag.putBoolean("resolved", true);
+
+                        ListTag pagesTag = new ListTag();
+                        for (String page : this.pages) { // Assuming `pages` is a List<String>
+                            pagesTag.add(StringTag.valueOf(page));
+                        }
+                        tag.put("pages", pagesTag);
+
+                        ItemStack signedBook = new ItemStack(Items.WRITTEN_BOOK);
+                        signedBook.setTag(tag);
+
+                        player.setItemInHand(player.getUsedItemHand(), signedBook);
+                    }
+                }
+                this.minecraft.setScreen(null); // Close the screen
             }
         }).bounds(this.width / 2 - 100, 225, 98, 20).build());
 
@@ -150,6 +186,14 @@ public class ParcheminScreen extends Screen {
         }).bounds(this.width / 2 + 2, 225, 98, 20).build());
 
         this.updateButtonVisibility();
+
+        this.authorName = this.minecraft.player != null ? this.minecraft.player.getName().getString() : "";
+
+        this.authorField = new EditBox(this.font, this.width / 2 - 100, 200, 200, 20, Component.literal("Author"));
+        this.authorField.setValue(this.authorName);
+        this.authorField.setResponder((value) -> this.authorName = value);
+
+        this.addRenderableWidget(this.authorField);
     }
 
     private void updateButtonVisibility() {
@@ -169,22 +213,24 @@ public class ParcheminScreen extends Screen {
 
     }
 
-    private void saveChanges(boolean save) {
+    private void saveChanges(boolean p_98161_) {
         if (this.isModified) {
             this.eraseEmptyTrailingPages();
-            this.updateLocalCopy(save);
-            int flag = this.hand == InteractionHand.MAIN_HAND ? this.owner.getInventory().selected : 40;
-            this.minecraft.getConnection().send(new ServerboundEditBookPacket(flag, this.pages, save ? Optional.of(this.title.trim()) : Optional.empty()));
+            this.updateLocalCopy(p_98161_);
+            int $$1 = this.hand == InteractionHand.MAIN_HAND ? this.owner.getInventory().selected : 40;
+            this.minecraft.getConnection().send(new ServerboundEditBookPacket($$1, this.pages, p_98161_ ? Optional.of(this.title.trim()) : Optional.empty()));
         }
     }
 
-    private void updateLocalCopy(boolean update) {
-        ListTag flag = new ListTag();
-        Stream pages = this.pages.stream().map(StringTag::valueOf);
-        Objects.requireNonNull(flag);
-        if (update) {
+    private void updateLocalCopy(boolean finalize) {
+        ListTag pagesTag = new ListTag();
+        this.pages.stream().map(StringTag::valueOf).forEach(pagesTag::add);
+
+        this.book.addTagElement("pages", pagesTag);
+        if (finalize) {
             this.book.addTagElement("author", StringTag.valueOf(this.owner.getGameProfile().getName()));
             this.book.addTagElement("title", StringTag.valueOf(this.title.trim()));
+            this.book.addTagElement("resolved", StringTag.valueOf("true")); // Mark as signed
         }
     }
 
