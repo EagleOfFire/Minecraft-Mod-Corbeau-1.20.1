@@ -68,26 +68,28 @@ public class ParcheminScelleScreen extends Screen {
         this(EMPTY_ACCESS, false);
     }
 
-    private ParcheminScelleScreen(ParcheminScelleScreen.BookAccess p_98266_, boolean p_98267_) {
+    private ParcheminScelleScreen(ParcheminScelleScreen.BookAccess bookAccess, boolean shouldPlayTurnSound) {
         super(GameNarrator.NO_TITLE);
         this.cachedPageComponents = Collections.emptyList();
         this.cachedPage = -1;
         this.pageMsg = CommonComponents.EMPTY;
-        this.bookAccess = p_98266_;
-        this.playTurnSound = p_98267_;
+        this.bookAccess = bookAccess;
+        this.playTurnSound = shouldPlayTurnSound;
     }
 
-    public void setBookAccess(ParcheminScelleScreen.BookAccess p_98289_) {
-        this.bookAccess = p_98289_;
-        this.currentPage = Mth.clamp(this.currentPage, 0, p_98289_.getPageCount());
+
+    public void setBookAccess(ParcheminScelleScreen.BookAccess bookAccess) {
+        this.bookAccess = bookAccess;
+        this.currentPage = Mth.clamp(this.currentPage, 0, bookAccess.getPageCount());
         this.updateButtonVisibility();
         this.cachedPage = -1;
     }
 
-    public boolean setPage(int p_98276_) {
-        int $$1 = Mth.clamp(p_98276_, 0, this.bookAccess.getPageCount() - 1);
-        if ($$1 != this.currentPage) {
-            this.currentPage = $$1;
+
+    public boolean setPage(int pageIndex) {
+        int clampedPageIndex = Mth.clamp(pageIndex, 0, this.bookAccess.getPageCount() - 1);
+        if (clampedPageIndex != this.currentPage) {
+            this.currentPage = clampedPageIndex;
             this.updateButtonVisibility();
             this.cachedPage = -1;
             return true;
@@ -96,9 +98,10 @@ public class ParcheminScelleScreen extends Screen {
         }
     }
 
-    protected boolean forcePage(int p_98295_) {
-        return this.setPage(p_98295_);
+    protected boolean forcePage(int pageIndex) {
+        return this.setPage(pageIndex);
     }
+
 
     protected void init() {
         this.createMenuControls();
@@ -106,22 +109,32 @@ public class ParcheminScelleScreen extends Screen {
     }
 
     protected void createMenuControls() {
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, (p_289629_) -> {
-            this.onClose();
-        }).bounds(this.width / 2 - 100, 196, 200, 20).build());
+        this.addRenderableWidget(
+                Button.builder(CommonComponents.GUI_DONE, (clickedButton) -> {
+                    this.onClose();
+                }).bounds(this.width / 2 - 100, 225, 200, 20).build()
+        );
     }
 
+
     protected void createPageControlButtons() {
-        int $$0 = (this.width - 192) / 2;
-        boolean $$1 = true;
-        this.forwardButton = (PageButton) this.addRenderableWidget(new PageButton($$0 + 116, 159, true, (p_98297_) -> {
-            this.pageForward();
-        }, this.playTurnSound));
-        this.backButton = (PageButton) this.addRenderableWidget(new PageButton($$0 + 43, 159, false, (p_98287_) -> {
-            this.pageBack();
-        }, this.playTurnSound));
+        int xOffset = (this.width - 192) / 2;
+
+        this.forwardButton = (PageButton) this.addRenderableWidget(
+                new PageButton(xOffset + 116, 159, true, (button) -> {
+                    this.pageForward();
+                }, this.playTurnSound)
+        );
+
+        this.backButton = (PageButton) this.addRenderableWidget(
+                new PageButton(xOffset + 43, 159, false, (button) -> {
+                    this.pageBack();
+                }, this.playTurnSound)
+        );
+
         this.updateButtonVisibility();
     }
+
 
     private int getNumPages() {
         return this.bookAccess.getPageCount();
@@ -148,15 +161,15 @@ public class ParcheminScelleScreen extends Screen {
         this.backButton.visible = this.currentPage > 0;
     }
 
-    public boolean keyPressed(int p_98278_, int p_98279_, int p_98280_) {
-        if (super.keyPressed(p_98278_, p_98279_, p_98280_)) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         } else {
-            switch (p_98278_) {
-                case 266:
+            switch (keyCode) {
+                case 266: // Page Up
                     this.backButton.onPress();
                     return true;
-                case 267:
+                case 267: // Page Down
                     this.forwardButton.onPress();
                     return true;
                 default:
@@ -165,138 +178,135 @@ public class ParcheminScelleScreen extends Screen {
         }
     }
 
-    public void render(GuiGraphics p_281997_, int p_281262_, int p_283321_, float p_282251_) {
-        this.renderBackground(p_281997_);
-        int $$4 = (this.width - 192) / 2;
-        boolean $$5 = true;
+
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(guiGraphics);
+
+        int bookX = (this.width - 192) / 2;
 
         int screenCenterX = (this.width - 256) / 2;
         int screenCenterY = (this.height - 256) / 2;
-        p_281997_.blit(PARCHEMIN_SCREEN, screenCenterX, screenCenterY, 0, 0, 256, 256, 256, 256);
-
+        guiGraphics.blit(PARCHEMIN_SCREEN, screenCenterX, screenCenterY, 0, 0, 256, 256, 256, 256);
 
         if (this.cachedPage != this.currentPage) {
-            FormattedText $$6 = this.bookAccess.getPage(this.currentPage);
-            this.cachedPageComponents = this.font.split($$6, 114);
-            this.pageMsg = Component.translatable("book.pageIndicator", new Object[]{this.currentPage + 1, Math.max(this.getNumPages(), 1)});
+            FormattedText pageText = this.bookAccess.getPage(this.currentPage);
+            this.cachedPageComponents = this.font.split(pageText, 114);
         }
 
         this.cachedPage = this.currentPage;
-        int $$7 = this.font.width(this.pageMsg);
-        p_281997_.drawString(this.font, this.pageMsg, $$4 - $$7 + 192 - 44, 18, 0, false);
-        Objects.requireNonNull(this.font);
-        int $$8 = Math.min(128 / 9, this.cachedPageComponents.size());
 
-        for (int $$9 = 0; $$9 < $$8; ++$$9) {
-            FormattedCharSequence $$10 = (FormattedCharSequence) this.cachedPageComponents.get($$9);
-            Font var10001 = this.font;
-            int var10003 = $$4 + 36;
-            Objects.requireNonNull(this.font);
-            p_281997_.drawString(var10001, $$10, var10003, 32 + $$9 * 9, 0, false);
+        int pageIndicatorWidth = this.font.width(this.pageMsg);
+        guiGraphics.drawString(this.font, this.pageMsg, bookX - pageIndicatorWidth + 192 - 44, 100, 0, false);
+
+        int maxLines = Math.min(128 / 9, this.cachedPageComponents.size());
+        for (int lineIndex = 0; lineIndex < maxLines; ++lineIndex) {
+            FormattedCharSequence line = this.cachedPageComponents.get(lineIndex);
+            guiGraphics.drawString(this.font, line, bookX + 36, 40 + lineIndex * 9, 0, false);
         }
 
-        Style $$11 = this.getClickedComponentStyleAt((double) p_281262_, (double) p_283321_);
-        if ($$11 != null) {
-            p_281997_.renderComponentHoverEffect(this.font, $$11, p_281262_, p_283321_);
+        Style hoveredStyle = this.getClickedComponentStyleAt((double) mouseX, (double) mouseY);
+        if (hoveredStyle != null) {
+            guiGraphics.renderComponentHoverEffect(this.font, hoveredStyle, mouseX, mouseY);
         }
 
-        super.render(p_281997_, p_281262_, p_283321_, p_282251_);
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 
-    public boolean mouseClicked(double p_98272_, double p_98273_, int p_98274_) {
-        if (p_98274_ == 0) {
-            Style $$3 = this.getClickedComponentStyleAt(p_98272_, p_98273_);
-            if ($$3 != null && this.handleComponentClicked($$3)) {
+
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) { // Left-click
+            Style clickedStyle = this.getClickedComponentStyleAt(mouseX, mouseY);
+            if (clickedStyle != null && this.handleComponentClicked(clickedStyle)) {
                 return true;
             }
         }
 
-        return super.mouseClicked(p_98272_, p_98273_, p_98274_);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    public boolean handleComponentClicked(Style p_98293_) {
-        ClickEvent $$1 = p_98293_.getClickEvent();
-        if ($$1 == null) {
+
+    public boolean handleComponentClicked(Style style) {
+        ClickEvent clickEvent = style.getClickEvent();
+        if (clickEvent == null) {
             return false;
-        } else if ($$1.getAction() == ClickEvent.Action.CHANGE_PAGE) {
-            String $$2 = $$1.getValue();
+        } else if (clickEvent.getAction() == ClickEvent.Action.CHANGE_PAGE) {
+            String pageValue = clickEvent.getValue();
 
             try {
-                int $$3 = Integer.parseInt($$2) - 1;
-                return this.forcePage($$3);
-            } catch (Exception var5) {
+                int pageIndex = Integer.parseInt(pageValue) - 1;
+                return this.forcePage(pageIndex);
+            } catch (NumberFormatException e) {
                 return false;
             }
         } else {
-            boolean $$4 = super.handleComponentClicked(p_98293_);
-            if ($$4 && $$1.getAction() == ClickEvent.Action.RUN_COMMAND) {
+            boolean handled = super.handleComponentClicked(style);
+            if (handled && clickEvent.getAction() == ClickEvent.Action.RUN_COMMAND) {
                 this.closeScreen();
             }
 
-            return $$4;
+            return handled;
         }
     }
+
 
     protected void closeScreen() {
         this.minecraft.setScreen((Screen) null);
     }
 
     @Nullable
-    public Style getClickedComponentStyleAt(double p_98269_, double p_98270_) {
+    public Style getClickedComponentStyleAt(double mouseX, double mouseY) {
         if (this.cachedPageComponents.isEmpty()) {
             return null;
-        } else {
-            int $$2 = Mth.floor(p_98269_ - (double) ((this.width - 192) / 2) - 36.0);
-            int $$3 = Mth.floor(p_98270_ - 2.0 - 30.0);
-            if ($$2 >= 0 && $$3 >= 0) {
-                Objects.requireNonNull(this.font);
-                int $$4 = Math.min(128 / 9, this.cachedPageComponents.size());
-                if ($$2 <= 114) {
-                    Objects.requireNonNull(this.minecraft.font);
-                    if ($$3 < 9 * $$4 + $$4) {
-                        Objects.requireNonNull(this.minecraft.font);
-                        int $$5 = $$3 / 9;
-                        if ($$5 >= 0 && $$5 < this.cachedPageComponents.size()) {
-                            FormattedCharSequence $$6 = (FormattedCharSequence) this.cachedPageComponents.get($$5);
-                            return this.minecraft.font.getSplitter().componentStyleAtWidth($$6, $$2);
-                        }
-
-                        return null;
-                    }
-                }
-
-                return null;
-            } else {
-                return null;
-            }
         }
+
+        int relativeX = Mth.floor(mouseX - ((this.width - 192) / 2.0) - 36.0);
+        int relativeY = Mth.floor(mouseY - 32.0); // 2.0 + 30.0 from original
+
+        if (relativeX < 0 || relativeY < 0) {
+            return null;
+        }
+
+        int maxLines = Math.min(128 / 9, this.cachedPageComponents.size());
+
+        if (relativeX > 114 || relativeY >= 9 * maxLines + maxLines) {
+            return null;
+        }
+
+        int lineIndex = relativeY / 9;
+        if (lineIndex < 0 || lineIndex >= this.cachedPageComponents.size()) {
+            return null;
+        }
+
+        FormattedCharSequence line = this.cachedPageComponents.get(lineIndex);
+        return this.minecraft.font.getSplitter().componentStyleAtWidth(line, relativeX);
     }
 
-    static List<String> loadPages(CompoundTag p_169695_) {
-        ImmutableList.Builder<String> $$1 = ImmutableList.builder();
-        Objects.requireNonNull($$1);
-        loadPages(p_169695_, $$1::add);
-        return $$1.build();
+
+    static List<String> loadPages(CompoundTag bookTag) {
+        ImmutableList.Builder<String> pagesBuilder = ImmutableList.builder();
+        Objects.requireNonNull(pagesBuilder);
+        loadPages(bookTag, pagesBuilder::add);
+        return pagesBuilder.build();
     }
 
-    public static void loadPages(CompoundTag p_169697_, Consumer<String> p_169698_) {
-        ListTag $$2 = p_169697_.getList("pages", 8).copy();
-        IntFunction $$5;
-        if (Minecraft.getInstance().isTextFilteringEnabled() && p_169697_.contains("filtered_pages", 10)) {
-            CompoundTag $$3 = p_169697_.getCompound("filtered_pages");
-            $$5 = (p_169702_) -> {
-                String $$3x = String.valueOf(p_169702_);
-                return $$3.contains($$3x) ? $$3.getString($$3x) : $$2.getString(p_169702_);
+    public static void loadPages(CompoundTag bookTag, Consumer<String> pageConsumer) {
+        ListTag pagesList = bookTag.getList("pages", 8).copy();
+        IntFunction<String> pageResolver;
+
+        if (Minecraft.getInstance().isTextFilteringEnabled() && bookTag.contains("filtered_pages", 10)) {
+            CompoundTag filteredPages = bookTag.getCompound("filtered_pages");
+            pageResolver = (pageIndex) -> {
+                String pageKey = String.valueOf(pageIndex);
+                return filteredPages.contains(pageKey) ? filteredPages.getString(pageKey) : pagesList.getString(pageIndex);
             };
         } else {
-            Objects.requireNonNull($$2);
-            $$5 = $$2::getString;
+            Objects.requireNonNull(pagesList);
+            pageResolver = pagesList::getString;
         }
 
-        for (int $$6 = 0; $$6 < $$2.size(); ++$$6) {
-            p_169698_.accept((String) $$5.apply($$6));
+        for (int i = 0; i < pagesList.size(); ++i) {
+            pageConsumer.accept(pageResolver.apply(i));
         }
-
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -326,53 +336,60 @@ public class ParcheminScelleScreen extends Screen {
     public static class WritableBookAccess implements ParcheminScelleScreen.BookAccess {
         private final List<String> pages;
 
-        public WritableBookAccess(ItemStack p_98314_) {
-            this.pages = readPages(p_98314_);
+        public WritableBookAccess(ItemStack bookStack) {
+            this.pages = readPages(bookStack);
         }
 
-        private static List<String> readPages(ItemStack p_98319_) {
-            CompoundTag $$1 = p_98319_.getTag();
-            return (List) ($$1 != null ? ParcheminScelleScreen.loadPages($$1) : ImmutableList.of());
+        private static List<String> readPages(ItemStack bookStack) {
+            CompoundTag bookTag = bookStack.getTag();
+            return (bookTag != null) ? ParcheminScelleScreen.loadPages(bookTag) : ImmutableList.of();
         }
 
         public int getPageCount() {
             return this.pages.size();
         }
 
-        public FormattedText getPageRaw(int p_98317_) {
-            return FormattedText.of((String) this.pages.get(p_98317_));
+        public FormattedText getPageRaw(int pageIndex) {
+            return FormattedText.of(this.pages.get(pageIndex));
         }
     }
+
 
     @OnlyIn(Dist.CLIENT)
     public static class WrittenBookAccess implements ParcheminScelleScreen.BookAccess {
         private final List<String> pages;
 
-        public WrittenBookAccess(ItemStack p_98322_) {
-            this.pages = readPages(p_98322_);
+        public WrittenBookAccess(ItemStack bookStack) {
+            this.pages = readPages(bookStack);
         }
 
-        private static List<String> readPages(ItemStack p_98327_) {
-            CompoundTag $$1 = p_98327_.getTag();
-            return (List) ($$1 != null && ParcheminScelleItem.makeSureTagIsValid($$1) ? ParcheminScelleScreen.loadPages($$1) : ImmutableList.of(Component.Serializer.toJson(Component.translatable("book.invalid.tag").withStyle(ChatFormatting.DARK_RED))));
+        private static List<String> readPages(ItemStack bookStack) {
+            CompoundTag bookTag = bookStack.getTag();
+            return (bookTag != null && ParcheminScelleItem.makeSureTagIsValid(bookTag))
+                    ? ParcheminScelleScreen.loadPages(bookTag)
+                    : ImmutableList.of(Component.Serializer.toJson(
+                    Component.translatable("book.invalid.tag").withStyle(ChatFormatting.DARK_RED)
+            ));
         }
 
         public int getPageCount() {
             return this.pages.size();
         }
 
-        public FormattedText getPageRaw(int p_98325_) {
-            String $$1 = (String) this.pages.get(p_98325_);
+        public FormattedText getPageRaw(int pageIndex) {
+            String rawJson = this.pages.get(pageIndex);
 
             try {
-                FormattedText $$2 = Component.Serializer.fromJson($$1);
-                if ($$2 != null) {
-                    return $$2;
+                FormattedText parsedText = Component.Serializer.fromJson(rawJson);
+                if (parsedText != null) {
+                    return parsedText;
                 }
-            } catch (Exception var4) {
+            } catch (Exception ignored) {
+                // Ignored: fallback to plain text if JSON parsing fails
             }
 
-            return FormattedText.of($$1);
+            return FormattedText.of(rawJson);
         }
+
     }
 }
