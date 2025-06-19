@@ -9,7 +9,11 @@ import software.bernie.geckolib.model.GeoModel;
 public class CorbeauModel extends GeoModel<CorbeauEntity> {
     @Override
     public ResourceLocation getModelResource(CorbeauEntity corbeauEntity) {
-        return new ResourceLocation(ROSCorbeau.MODID, "geo/corbeau.geo.json");
+        if(corbeauEntity.isTransformed()){
+            return new ResourceLocation(ROSCorbeau.MODID, "geo/corbeau_message.geo.json");
+        } else {
+            return new ResourceLocation(ROSCorbeau.MODID, "geo/corbeau.geo.json");
+        }
     }
 
     @Override

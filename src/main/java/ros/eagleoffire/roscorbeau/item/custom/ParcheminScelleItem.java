@@ -1,15 +1,19 @@
 package ros.eagleoffire.roscorbeau.item.custom;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundOpenBookPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.WrittenBookItem;
 import net.minecraft.world.level.Level;
+import ros.eagleoffire.roscorbeau.entity.custom.CorbeauEntity;
 import ros.eagleoffire.roscorbeau.screen.ParcheminScelleScreen;
 import ros.eagleoffire.roscorbeau.screen.ParcheminScreen;
 
@@ -28,4 +32,14 @@ public class ParcheminScelleItem extends WrittenBookItem {
         return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide());
     }
 
+    @Override
+    public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
+        if (target instanceof CorbeauEntity corbeau){
+            if(!player.level().isClientSide){
+                corbeau.setTransformed(!corbeau.isTransformed());
+            }
+            return InteractionResult.sidedSuccess(player.level().isClientSide);
+        }
+        return super.interactLivingEntity(stack, player, target, hand);
+    }
 }
