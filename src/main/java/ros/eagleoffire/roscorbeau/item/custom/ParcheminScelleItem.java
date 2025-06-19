@@ -36,7 +36,11 @@ public class ParcheminScelleItem extends WrittenBookItem {
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
         if (target instanceof CorbeauEntity corbeau){
             if(!player.level().isClientSide){
+                ItemStack toStore = stack.copyWithCount(1);
+                corbeau.setStoredParchemin(toStore);
                 corbeau.setTransformed(!corbeau.isTransformed());
+
+                stack.shrink(1);
             }
             return InteractionResult.sidedSuccess(player.level().isClientSide);
         }

@@ -40,6 +40,7 @@ public class CorbeauEntity extends Animal implements GeoEntity {
     private boolean transformed = false;
     private static final EntityDataAccessor<Boolean> TRANSFORMED =
             SynchedEntityData.defineId(CorbeauEntity.class, EntityDataSerializers.BOOLEAN);
+    private ItemStack storedParchemin = ItemStack.EMPTY;
 
     public CorbeauEntity(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
@@ -54,7 +55,7 @@ public class CorbeauEntity extends Animal implements GeoEntity {
     }
 
     private <T extends GeoAnimatable> PlayState predicate(AnimationState<T> tAnimationState) {
-        if(tAnimationState.isMoving()) {
+        if (tAnimationState.isMoving()) {
             tAnimationState.getController().setAnimation(RawAnimation.begin().then("animation.corbeau.marcher", Animation.LoopType.LOOP));
             return PlayState.CONTINUE;
         }
@@ -67,20 +68,28 @@ public class CorbeauEntity extends Animal implements GeoEntity {
         return this.entityData.get(TRANSFORMED);
     }
 
-    public void setTransformed(boolean transformed){
+    public void setTransformed(boolean transformed) {
         this.entityData.set(TRANSFORMED, transformed);
+    }
+
+    public ItemStack getStoredParchemin() {
+        return storedParchemin;
+    }
+
+    public void setStoredParchemin(ItemStack stack) {
+        this.storedParchemin = stack;
     }
 
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new FloatGoal(this));
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2D,false));
+        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2D, false));
         this.goalSelector.addGoal(4, new WaterAvoidingRandomStrollGoal(this, 1.0D));
         this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
 
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class,true));
-        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class,false));
-        this.targetSelector.addGoal(3,new NearestAttackableTargetGoal<>(this,IronGolem.class,true));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
+        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolem.class, true));
         this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Creeper.class, true));
     }
 
@@ -96,15 +105,23 @@ public class CorbeauEntity extends Animal implements GeoEntity {
     }
 
     @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
-        this.transformed = tag.getBoolean("Transformed");
-    }
-
-    @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putBoolean("Transformed", isTransformed());
+
+        if(!storedParchemin.isEmpty()){
+            tag.put("StoredParchemin", storedParchemin.save(new CompoundTag()));
+        }
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.transformed = tag.getBoolean("Transformed");
+
+        if (tag.contains("StoredParchemin")) {
+            storedParchemin = ItemStack.of(tag.getCompound("StoredParchemin"));
+        }
     }
 
     @Override
@@ -120,16 +137,21 @@ public class CorbeauEntity extends Animal implements GeoEntity {
 
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
-        if (!level().isClientSide  && hand == InteractionHand.MAIN_HAND) {
+        if (!level().isClientSide && hand == InteractionHand.MAIN_HAND) {
             ItemStack heldItem = player.getItemInHand(hand);
 
-            if (heldItem.isEmpty() && player.isShiftKeyDown()) {
-                if (isTransformed()) {
+            if (heldItem.isEmpty() && player.isShiftKeyDown() && isTransformed()) {
+                if (!storedParchemin.isEmpty()) {
+                    boolean success = player.getInventory().add(storedParchemin.copy());
+                    if (!success) {
+                        player.drop(storedParchemin.copy(), false);
+                    }
+                    storedParchemin = ItemStack.EMPTY;
+                }
                     setTransformed(false);
                     return InteractionResult.SUCCESS;
                 }
             }
-        }
         return super.mobInteract(player, hand);
     }
 }
