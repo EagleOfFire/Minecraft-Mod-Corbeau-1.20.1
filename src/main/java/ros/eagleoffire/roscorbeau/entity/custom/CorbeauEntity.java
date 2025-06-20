@@ -34,6 +34,7 @@ import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache
 import software.bernie.geckolib.core.animatable.instance.SingletonAnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.*;
 import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class CorbeauEntity extends Animal implements GeoEntity {
     private AnimatableInstanceCache cache = new SingletonAnimatableInstanceCache(this);
@@ -41,6 +42,7 @@ public class CorbeauEntity extends Animal implements GeoEntity {
     private static final EntityDataAccessor<Boolean> TRANSFORMED =
             SynchedEntityData.defineId(CorbeauEntity.class, EntityDataSerializers.BOOLEAN);
     private ItemStack storedParchemin = ItemStack.EMPTY;
+    private String targetPlayerName = "";
 
     public CorbeauEntity(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
@@ -80,6 +82,20 @@ public class CorbeauEntity extends Animal implements GeoEntity {
         this.storedParchemin = stack;
     }
 
+    public void triggerFlyAway() {
+        this.triggerAnim("fly_controller", "animation.corbeau.voler");
+        this.setNoGravity(true);
+        this.setDeltaMovement(this.getLookAngle().scale(0.6));
+    }
+
+    public void setTargetPlayerName(String name){
+        this.targetPlayerName = name;
+    }
+
+    public String getTargetPlayerName() {
+        return this.targetPlayerName;
+    }
+
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new FloatGoal(this));
@@ -102,6 +118,14 @@ public class CorbeauEntity extends Animal implements GeoEntity {
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
         controllerRegistrar.add(new AnimationController<>(this, "controller", 0, this::predicate));
+        controllerRegistrar.add(
+            new AnimationController<>(this, "fly_controller", 10, state -> {
+                if (this.isTransformed()) {
+                    return state.setAndContinue(RawAnimation.begin().then("animation.corbeau.voler", Animation.LoopType.LOOP));
+                }
+                return PlayState.STOP;
+            })
+        );
     }
 
     @Override
@@ -109,9 +133,11 @@ public class CorbeauEntity extends Animal implements GeoEntity {
         super.addAdditionalSaveData(tag);
         tag.putBoolean("Transformed", isTransformed());
 
-        if(!storedParchemin.isEmpty()){
+        if (!storedParchemin.isEmpty()) {
             tag.put("StoredParchemin", storedParchemin.save(new CompoundTag()));
         }
+
+        tag.putString("TargetPlayer", targetPlayerName);
     }
 
     @Override
@@ -122,6 +148,8 @@ public class CorbeauEntity extends Animal implements GeoEntity {
         if (tag.contains("StoredParchemin")) {
             storedParchemin = ItemStack.of(tag.getCompound("StoredParchemin"));
         }
+
+        targetPlayerName = tag.getString("TargetPlayer");
     }
 
     @Override
@@ -148,10 +176,12 @@ public class CorbeauEntity extends Animal implements GeoEntity {
                     }
                     storedParchemin = ItemStack.EMPTY;
                 }
-                    setTransformed(false);
-                    return InteractionResult.SUCCESS;
-                }
+                setTransformed(false);
+                return InteractionResult.SUCCESS;
             }
+        }
         return super.mobInteract(player, hand);
     }
+
+
 }

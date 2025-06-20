@@ -18,6 +18,7 @@ import ros.eagleoffire.roscorbeau.entity.ModEntities;
 import ros.eagleoffire.roscorbeau.entity.client.CorbeauRenderer;
 import ros.eagleoffire.roscorbeau.item.ModItems;
 import ros.eagleoffire.roscorbeau.item.ModCreativeTabs;
+import ros.eagleoffire.roscorbeau.network.ModMessages;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(ROSCorbeau.MODID)
@@ -37,24 +38,13 @@ public class ROSCorbeau
         ModItems.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
-        modEventBus.addListener(this::addCreative);
-
         MinecraftForge.EVENT_BUS.register(this);
     }
 
-    private void commonSetup(final FMLCommonSetupEvent event)
-    {
-    }
-
-    // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event)
-    {
-    }
-
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event)
-    {
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            ModMessages.register();
+        });
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
