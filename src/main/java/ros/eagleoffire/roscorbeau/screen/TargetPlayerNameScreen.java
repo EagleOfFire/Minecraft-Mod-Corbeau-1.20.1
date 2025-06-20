@@ -35,6 +35,7 @@ public class TargetPlayerNameScreen extends Screen {
         sendButton = Button.builder(Component.literal("Send"), button -> {
             String text = textField.getValue();
             Minecraft.getInstance().player.sendSystemMessage(Component.literal("You typed: " + text));
+            callback.accept(text);
             onClose();
         }).bounds(centerX - 40, centerY + 20, 80, 20).build();
 

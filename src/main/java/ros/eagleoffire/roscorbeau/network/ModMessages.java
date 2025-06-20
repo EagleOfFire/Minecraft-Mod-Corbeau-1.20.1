@@ -7,6 +7,8 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import ros.eagleoffire.roscorbeau.ROSCorbeau;
+import ros.eagleoffire.roscorbeau.entity.custom.CorbeauEntity;
+import ros.eagleoffire.roscorbeau.network.packets.CorbeauSendParcheminC2SPacket;
 
 public class ModMessages {
     private static SimpleChannel INSTANCE;
@@ -25,6 +27,11 @@ public class ModMessages {
 
         INSTANCE = net;
 
+        net.messageBuilder(CorbeauSendParcheminC2SPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(CorbeauSendParcheminC2SPacket::new)
+                .encoder(CorbeauSendParcheminC2SPacket::toBytes)
+                .consumerMainThread(CorbeauSendParcheminC2SPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message){

@@ -34,15 +34,15 @@ public class ParcheminScelleItem extends WrittenBookItem {
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
         if (!(target instanceof CorbeauEntity corbeau)) return super.interactLivingEntity(stack, player, target, hand);
         if (player.level().isClientSide) {
-            Minecraft.getInstance().setScreen(new TargetPlayerNameScreen(name -> {
-                ModMessages.sendToServer(new CorbeauSendParcheminC2SPacket(corbeau.getId(), name));
-            }));
-            return InteractionResult.sidedSuccess(player.level().isClientSide);
-        } else {
             ItemStack toStore = stack.copyWithCount(1);
             corbeau.setStoredParchemin(toStore);
             corbeau.setTransformed(!corbeau.isTransformed());
             stack.shrink(1);
+            Minecraft.getInstance().setScreen(new TargetPlayerNameScreen(name -> {
+                System.out.println("Sending packet with name: " + name);
+                ModMessages.sendToServer(new CorbeauSendParcheminC2SPacket(corbeau.getId(), name));
+            }));
+            return InteractionResult.sidedSuccess(player.level().isClientSide);
         }
         return super.interactLivingEntity(stack, player, target, hand);
     }

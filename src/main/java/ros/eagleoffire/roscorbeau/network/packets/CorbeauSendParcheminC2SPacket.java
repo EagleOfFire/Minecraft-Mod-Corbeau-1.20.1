@@ -28,8 +28,10 @@ public class CorbeauSendParcheminC2SPacket {
         buf.writeUtf(this.targetName);
     }
 
-    public boolean handle(Supplier<NetworkEvent.Context> supplier, ServerPlayer player) {
+    public void handle(Supplier<NetworkEvent.Context> supplier) {
+        System.out.println("packet send");
         NetworkEvent.Context context = supplier.get();
+        ServerPlayer player = supplier.get().getSender();
         context.enqueueWork(() -> {
             ServerLevel level = player.serverLevel();
             Entity entity = level.getEntity(entityId);
@@ -39,6 +41,5 @@ public class CorbeauSendParcheminC2SPacket {
                 corbeau.triggerFlyAway();
             }
         });
-        return true;
     }
 }

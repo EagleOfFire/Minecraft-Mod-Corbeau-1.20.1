@@ -53,7 +53,8 @@ public class CorbeauEntity extends Animal implements GeoEntity {
                 .add(Attributes.MAX_HEALTH, 160)
                 .add(Attributes.ATTACK_DAMAGE, 1.0f)
                 .add(Attributes.ATTACK_SPEED, 1.0f)
-                .add(Attributes.MOVEMENT_SPEED, 0.4f).build();
+                .add(Attributes.MOVEMENT_SPEED, 0.4f)
+                .add(Attributes.FLYING_SPEED, 0.6f).build();
     }
 
     private <T extends GeoAnimatable> PlayState predicate(AnimationState<T> tAnimationState) {
@@ -83,12 +84,28 @@ public class CorbeauEntity extends Animal implements GeoEntity {
     }
 
     public void triggerFlyAway() {
-        this.triggerAnim("fly_controller", "animation.corbeau.voler");
-        this.setNoGravity(true);
-        this.setDeltaMovement(this.getLookAngle().scale(0.6));
+        System.out.println(this.isNoGravity());
+        if (!level().isClientSide) {
+            this.setNoGravity(true);
+            double groundY = this.blockPosition().getY();
+
+            // Scan downward to find the first solid block under the entity
+            for (int y = this.blockPosition().getY(); y > level().getMinBuildHeight(); y--) {
+                if (!level().getBlockState(this.blockPosition().offset(0, y - this.blockPosition().getY(), 0)).isAir()) {
+                    groundY = y;
+                    break;
+                }
+            }
+
+            // Set the position to 3 blocks above ground
+            this.setPos(this.getX(), groundY + 3, this.getZ());
+
+            // Optionally stop any vertical movement to prevent drifting
+            this.setDeltaMovement(this.getDeltaMovement().x, 0, this.getDeltaMovement().z);
+        }
     }
 
-    public void setTargetPlayerName(String name){
+    public void setTargetPlayerName(String name) {
         this.targetPlayerName = name;
     }
 
@@ -98,15 +115,8 @@ public class CorbeauEntity extends Animal implements GeoEntity {
 
     @Override
     protected void registerGoals() {
-        this.goalSelector.addGoal(1, new FloatGoal(this));
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2D, false));
-        this.goalSelector.addGoal(4, new WaterAvoidingRandomStrollGoal(this, 1.0D));
-        this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
-
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
-        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false));
-        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolem.class, true));
-        this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Creeper.class, true));
+        //this.goalSelector.addGoal(1, new FloatGoal(this));
+        //this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
     }
 
     @Nullable
@@ -119,12 +129,12 @@ public class CorbeauEntity extends Animal implements GeoEntity {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
         controllerRegistrar.add(new AnimationController<>(this, "controller", 0, this::predicate));
         controllerRegistrar.add(
-            new AnimationController<>(this, "fly_controller", 10, state -> {
-                if (this.isTransformed()) {
-                    return state.setAndContinue(RawAnimation.begin().then("animation.corbeau.voler", Animation.LoopType.LOOP));
-                }
-                return PlayState.STOP;
-            })
+                new AnimationController<>(this, "fly_controller", 10, state -> {
+                    if (this.isTransformed()) {
+                        return state.setAndContinue(RawAnimation.begin().then("animation.corbeau.voler", Animation.LoopType.LOOP));
+                    }
+                    return PlayState.STOP;
+                })
         );
     }
 
